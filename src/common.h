@@ -10,15 +10,20 @@
 
 #include "Predefine.h"
 
-#pragma region >>> Objects
+#pragma region>>> Objects
 
 struct Matrix
 {
-    Matrix(size_t row = 4, size_t col = 4)
+    Matrix(size_t row = 4, size_t col = 4, bool fillZero = true)
         : row(row)
         , col(col)
         , data(new float[row * col])
-    {}
+    {
+        for (size_t i = 0; i < row * col; i++)
+        {
+            data[i] = fillZero ? 0.0f : (float)rand();
+        }
+    }
     ~Matrix() { delete[] data; }
 
     bool operator==(const Matrix& rhs)
@@ -35,7 +40,7 @@ struct Matrix
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -75,10 +80,10 @@ struct Vector
     {
         return !(*this == rhs);
     }
-    
+
     float& operator[](int index)
     {
-        assert(size > index && index >=0);
+        assert(size > index && index >= 0);
         return data[index];
     }
 
@@ -87,7 +92,7 @@ struct Vector
 };
 #pragma endregion
 
-#pragma region >>> Global Functions
+#pragma region>>> Global Functions
 uint64_t sum_row_major(int** arr, int N, int M);
 uint64_t sum_col_major(int** arr, int N, int M);
 

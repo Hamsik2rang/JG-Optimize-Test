@@ -16,7 +16,7 @@
 
 int main(int argc, char** argv)
 {
-    int testIndex = 3;
+    int testIndex = 2;
     if (argc > 1)
     {
         testIndex = std::stoi(argv[1]);
@@ -78,8 +78,6 @@ int main(int argc, char** argv)
             sum_row_major(arr, N, M);
             ELAPSE_END(0, result[0]);
 
-            // warm_Up
-            sum_col_major(arr, N, M);
             ELAPSE_START(1)
             sum_col_major(arr, N, M);
             ELAPSE_END(1, result[1]);
@@ -89,46 +87,86 @@ int main(int argc, char** argv)
         {
             name[0] = FUNC_NAME(multiply_matrix_simd);
             name[1] = FUNC_NAME(multiply_matrix_scalar);
+
+            Matrix mat1(1024, 1024, false);
+            Matrix mat2(1024, 1024, false);
+            Matrix mat3(1024, 1024, true);
+
+            WARM_UP_CACHE_START();
+            multiply_matrix_simd(mat1, mat2, mat3);
+            multiply_matrix_scalar(mat1, mat2, mat3);
+            WARM_UP_CACHE_END();
+
+            ELAPSE_START(0)
+            multiply_matrix_simd(mat1, mat2, mat3);
+            ELAPSE_END(0, result[0]);
+
+            ELAPSE_START(1)
+            multiply_matrix_scalar(mat1, mat2, mat3);
+            ELAPSE_END(1, result[1]);
         }
         break;
         case 2:
         {
             name[0] = FUNC_NAME(multiply_many_matrix_simd);
             name[1] = FUNC_NAME(multiply_many_matrix_scalar);
+
+            size_t matrixCount = 10'000'000;
+            
+            std::vector<Matrix> mat1(matrixCount);
+            std::vector<Matrix> mat2(matrixCount);
+            std::vector<Matrix> mat3(matrixCount);
+
+            WARM_UP_CACHE_START();
+            multiply_many_matrix_simd(mat1, mat2, mat3);
+            multiply_many_matrix_scalar(mat1, mat2, mat3);
+            WARM_UP_CACHE_END();
+
+            ELAPSE_START(0)
+            multiply_many_matrix_simd(mat1, mat2, mat3);
+            ELAPSE_END(0, result[0]);
+
+            ELAPSE_START(1)
+            multiply_many_matrix_scalar(mat1, mat2, mat3);
+            ELAPSE_END(1, result[1]);
         }
         break;
         case 3:
         {
-            name[0] = FUNC_NAME(update_particle_position);
-            name[1] = FUNC_NAME(update_particle_position);
-            name[2] = FUNC_NAME(update_particle_position);
+            name[0] = FUNC_NAME(update_particle_position_aos_linked_list);
+            name[1] = FUNC_NAME(update_particle_position_aos_array);
+            name[2] = FUNC_NAME(update_particle_position_soa_array);
 
-            const size_t particleCount = 15000;
+            const size_t particleCount = 2'000'000;
+            const size_t frameCount    = 100;
             std::list<Particle> particle_aos_linked_list(particleCount);
             Particle* particle_aos_array = new Particle[particleCount];
-            ParticleSOA<particleCount> particle_soa;
+            ParticleSOA particle_soa_array(particleCount);
 
-            float deltaTime = (float)rand();
+            float deltaTime = (float)rand() * 0.001f;
+            volatile int temp;
             WARM_UP_CACHE_START();
-            update_particle_position(particle_aos_linked_list, particleCount, deltaTime);
-            update_particle_position(particle_aos_array, particleCount, deltaTime);
-            update_particle_position(particle_soa, particleCount, deltaTime);
+            temp = update_particle_position(particle_aos_linked_list, particleCount, deltaTime);
+            temp = update_particle_position(particle_aos_array, particleCount, deltaTime);
+            temp = update_particle_position(particle_soa_array, particleCount, deltaTime);
             WARM_UP_CACHE_END();
 
             ELAPSE_START(0);
-            for (int i = 0; i < 1000000; i++)
-                update_particle_position(particle_aos_linked_list, particleCount, deltaTime);
+            for (int i = 0; i < frameCount; i++)
+                temp = update_particle_position(particle_aos_linked_list, particleCount, deltaTime);
             ELAPSE_END(0, result[0]);
 
             ELAPSE_START(1);
-            for (int i = 0; i < 1000000; i++)
-                update_particle_position(particle_aos_array, particleCount, deltaTime);
+            for (int i = 0; i < frameCount; i++)
+                temp = update_particle_position(particle_aos_array, particleCount, deltaTime);
             ELAPSE_END(1, result[1]);
 
             ELAPSE_START(2)
-            for (int i = 0; i < 1000000; i++)
-                update_particle_position(particle_soa, particleCount, deltaTime);
+            for (int i = 0; i < frameCount; i++)
+                temp = update_particle_position(particle_soa_array, particleCount, deltaTime);
             ELAPSE_END(2, result[2]);
+
+            VALIDATE(temp, testIndex);
         }
         break;
         case 4:
@@ -143,7 +181,7 @@ int main(int argc, char** argv)
     std::cout << "---------------------------------" << std::endl;
     for (int i = 0; i < testCount; i++)
     {
-        std::cout << "## " << i << "번 함수 " << name[0] << " 수행 시간 : " << result[0] / 1000 << " 밀리초" << std::endl;
+        std::cout << "## " << i << "번 함수 " << name[i] << " 수행 시간 : " << result[i] / 1000 << " 밀리초" << std::endl;
         std::cout << "---------------------------------" << std::endl;
     }
 

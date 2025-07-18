@@ -13,41 +13,33 @@
 
 struct Particle
 {
-    Vector position; // 16bytes
+    Vector position; // 16bytes(float * 4)
     Vector velocity;
     Vector color;
     float leftTime;
-    float count;
+    uint32_t count;
 };
 
-template <size_t TSize>
+std::list<Particle> particles(10'000'000);
+
 struct ParticleSOA
 {
-    Vector position[TSize]; // 16bytes
-    Vector velocity[TSize];
-    Vector color[TSize];
-    float leftTime[TSize];
-    float count[TSize];
+    ParticleSOA(size_t size)
+    : position(new Vector[size])
+    , velocity(new Vector[size])
+    , color(new Vector[size])
+    , leftTime(new float[size])
+    , count((uint32_t)size)
+    {}
+    
+    Vector* position; // 16bytes
+    Vector* velocity;
+    Vector* color;
+    float* leftTime;
+    uint32_t count;
 };
 
-void update_particle_position(std::list<Particle>& particles, size_t size, float deltaTime);
-void update_particle_position(Particle* particles, size_t size, float deltaTime);
-
-// compile-time instantiation을 위해 헤더에 정의
-template<size_t TSize>
-void update_particle_position(ParticleSOA<TSize>& particles, size_t size, float deltaTime)
-{
-    assert(TSize == size);
-    for(size_t i = 0; i < size; i++)
-    {
-        auto& p = particles;
-        
-        p.position[size][0] += p.velocity[size][0] * deltaTime;
-        p.position[size][1] += p.velocity[size][1] * deltaTime;
-        p.position[size][2] += p.velocity[size][2] * deltaTime;
-        
-        p.leftTime[size] -= deltaTime;
-    }
-}
-
+int update_particle_position(std::list<Particle>& particles, size_t size, float deltaTime);
+int update_particle_position(Particle* particles, size_t size, float deltaTime);
+int update_particle_position(ParticleSOA& particles, size_t size, float deltaTime);
 #endif

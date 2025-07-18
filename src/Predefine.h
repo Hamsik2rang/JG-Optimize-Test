@@ -69,4 +69,10 @@ while(index-- > 0) \
 
 #define WARM_UP_CACHE_END() }
 
+#define VALIDATE(a, b) \
+if (a != b) \
+{ \
+    std::cout<<"Test index is not same with test func. Check it!" << std::endl; \
+} \
+
 #endif
