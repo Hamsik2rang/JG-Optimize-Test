@@ -20,8 +20,6 @@ struct Particle
     uint32_t count;
 };
 
-std::list<Particle> particles(10'000'000);
-
 struct ParticleSOA
 {
     ParticleSOA(size_t size)
@@ -42,4 +40,5 @@ struct ParticleSOA
 int update_particle_position(std::list<Particle>& particles, size_t size, float deltaTime);
 int update_particle_position(Particle* particles, size_t size, float deltaTime);
 int update_particle_position(ParticleSOA& particles, size_t size, float deltaTime);
+
 #endif

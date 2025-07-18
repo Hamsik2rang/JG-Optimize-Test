@@ -9,6 +9,7 @@
 #define __COMMON_H__
 
 #include "Predefine.h"
+#include "utility.h"
 
 #pragma region>>> Objects
 
@@ -21,7 +22,7 @@ struct Matrix
     {
         for (size_t i = 0; i < row * col; i++)
         {
-            data[i] = fillZero ? 0.0f : (float)rand();
+            data[i] = fillZero ? 0.0f : Random::NextFloat();
         }
     }
     ~Matrix() { delete[] data; }

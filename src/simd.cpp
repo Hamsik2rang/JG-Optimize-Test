@@ -6,7 +6,7 @@
 //
 #include "simd.h"
 
-void multiply_matrix_simd(const Matrix& lhs, const Matrix& rhs, Matrix& result)
+int multiply_matrix_simd(const Matrix& lhs, const Matrix& rhs, Matrix& result)
 {
     assert(lhs.col == rhs.row);
     size_t len = lhs.col;
@@ -52,9 +52,11 @@ void multiply_matrix_simd(const Matrix& lhs, const Matrix& rhs, Matrix& result)
         }
     }
 #endif
+    
+    return 1;
 }
 
-void multiply_matrix_scalar(const Matrix& lhs, const Matrix& rhs, Matrix& result)
+int multiply_matrix_scalar(const Matrix& lhs, const Matrix& rhs, Matrix& result)
 {
     assert(lhs.col == rhs.row);
     size_t len = lhs.col;
@@ -73,9 +75,10 @@ void multiply_matrix_scalar(const Matrix& lhs, const Matrix& rhs, Matrix& result
             result.data[i * row + j] = sum;
         }
     }
+    return 1;
 }
 
-void multiply_many_matrix_simd(const std::vector<Matrix>& lhs, const std::vector<Matrix>& rhs, std::vector<Matrix>& result)
+int multiply_many_matrix_simd(const std::vector<Matrix>& lhs, const std::vector<Matrix>& rhs, std::vector<Matrix>& result)
 {
     assert(lhs.size() == rhs.size());
     size_t count = lhs.size();
@@ -85,9 +88,11 @@ void multiply_many_matrix_simd(const std::vector<Matrix>& lhs, const std::vector
     {
         multiply_matrix_simd(lhs[i], rhs[i], result[i]);
     }
+    
+    return 2;
 }
 
-void multiply_many_matrix_scalar(const std::vector<Matrix>& lhs, const std::vector<Matrix>& rhs, std::vector<Matrix>& result)
+int multiply_many_matrix_scalar(const std::vector<Matrix>& lhs, const std::vector<Matrix>& rhs, std::vector<Matrix>& result)
 {
     assert(lhs.size() == rhs.size());
     size_t count = lhs.size();
@@ -97,5 +102,6 @@ void multiply_many_matrix_scalar(const std::vector<Matrix>& lhs, const std::vect
         multiply_matrix_scalar(lhs[i], rhs[i], result[i]);
     }
     
+    return 2;
 }
 

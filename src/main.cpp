@@ -8,6 +8,7 @@
 #include "common.h"
 #include "simd.h"
 #include "particle.h"
+#include "utility.h"
 
 #include <iostream>
 #include <chrono>
@@ -16,19 +17,20 @@
 
 int main(int argc, char** argv)
 {
-    int testIndex = 2;
+    int testIndex = 2; // command args 사용하기 귀찮으면 이 값을 원하는 케이스 인덱스로 변경하세요.
     if (argc > 1)
     {
         testIndex = std::stoi(argv[1]);
     }
 
-    srand((unsigned int)time(NULL));
+    Random::Init();
 
     std::vector<const char*> name;
     std::vector<size_t> runtime;
     std::vector<time_t> result;
 
     size_t testCount = 0;
+    volatile int returnIndex;
 
     switch (testIndex)
     {
@@ -66,7 +68,7 @@ int main(int argc, char** argv)
                 arr[i] = new int[M];
                 for (int j = 0; j < M; j++)
                 {
-                    arr[i][j] = rand() % 512;
+                    arr[i][j] = Random::NextInt32(-512, 512);
                 }
             }
             WARM_UP_CACHE_START();
@@ -93,16 +95,16 @@ int main(int argc, char** argv)
             Matrix mat3(1024, 1024, true);
 
             WARM_UP_CACHE_START();
-            multiply_matrix_simd(mat1, mat2, mat3);
-            multiply_matrix_scalar(mat1, mat2, mat3);
+            returnIndex = multiply_matrix_simd(mat1, mat2, mat3);
+            returnIndex = multiply_matrix_scalar(mat1, mat2, mat3);
             WARM_UP_CACHE_END();
 
             ELAPSE_START(0)
-            multiply_matrix_simd(mat1, mat2, mat3);
+            returnIndex = multiply_matrix_simd(mat1, mat2, mat3);
             ELAPSE_END(0, result[0]);
 
             ELAPSE_START(1)
-            multiply_matrix_scalar(mat1, mat2, mat3);
+            returnIndex = multiply_matrix_scalar(mat1, mat2, mat3);
             ELAPSE_END(1, result[1]);
         }
         break;
@@ -112,22 +114,22 @@ int main(int argc, char** argv)
             name[1] = FUNC_NAME(multiply_many_matrix_scalar);
 
             size_t matrixCount = 10'000'000;
-            
+
             std::vector<Matrix> mat1(matrixCount);
             std::vector<Matrix> mat2(matrixCount);
             std::vector<Matrix> mat3(matrixCount);
 
             WARM_UP_CACHE_START();
-            multiply_many_matrix_simd(mat1, mat2, mat3);
-            multiply_many_matrix_scalar(mat1, mat2, mat3);
+            returnIndex = multiply_many_matrix_simd(mat1, mat2, mat3);
+            returnIndex = multiply_many_matrix_scalar(mat1, mat2, mat3);
             WARM_UP_CACHE_END();
 
             ELAPSE_START(0)
-            multiply_many_matrix_simd(mat1, mat2, mat3);
+            returnIndex = multiply_many_matrix_simd(mat1, mat2, mat3);
             ELAPSE_END(0, result[0]);
 
             ELAPSE_START(1)
-            multiply_many_matrix_scalar(mat1, mat2, mat3);
+            returnIndex = multiply_many_matrix_scalar(mat1, mat2, mat3);
             ELAPSE_END(1, result[1]);
         }
         break;
@@ -143,30 +145,30 @@ int main(int argc, char** argv)
             Particle* particle_aos_array = new Particle[particleCount];
             ParticleSOA particle_soa_array(particleCount);
 
-            float deltaTime = (float)rand() * 0.001f;
-            volatile int temp;
+            float deltaTime = Random::NextFloat(0.001f, 0.015f);
+
             WARM_UP_CACHE_START();
-            temp = update_particle_position(particle_aos_linked_list, particleCount, deltaTime);
-            temp = update_particle_position(particle_aos_array, particleCount, deltaTime);
-            temp = update_particle_position(particle_soa_array, particleCount, deltaTime);
+            returnIndex = update_particle_position(particle_aos_linked_list, particleCount, deltaTime);
+            returnIndex = update_particle_position(particle_aos_array, particleCount, deltaTime);
+            returnIndex = update_particle_position(particle_soa_array, particleCount, deltaTime);
             WARM_UP_CACHE_END();
 
             ELAPSE_START(0);
             for (int i = 0; i < frameCount; i++)
-                temp = update_particle_position(particle_aos_linked_list, particleCount, deltaTime);
+                returnIndex = update_particle_position(particle_aos_linked_list, particleCount, deltaTime);
             ELAPSE_END(0, result[0]);
 
             ELAPSE_START(1);
             for (int i = 0; i < frameCount; i++)
-                temp = update_particle_position(particle_aos_array, particleCount, deltaTime);
+                returnIndex = update_particle_position(particle_aos_array, particleCount, deltaTime);
             ELAPSE_END(1, result[1]);
 
             ELAPSE_START(2)
             for (int i = 0; i < frameCount; i++)
-                temp = update_particle_position(particle_soa_array, particleCount, deltaTime);
+                returnIndex = update_particle_position(particle_soa_array, particleCount, deltaTime);
             ELAPSE_END(2, result[2]);
 
-            VALIDATE(temp, testIndex);
+            VALIDATE(returnIndex, testIndex);
         }
         break;
         case 4:
@@ -184,6 +186,16 @@ int main(int argc, char** argv)
         std::cout << "## " << i << "번 함수 " << name[i] << " 수행 시간 : " << result[i] / 1000 << " 밀리초" << std::endl;
         std::cout << "---------------------------------" << std::endl;
     }
+
+    std::sort(result.begin(), result.end());
+
+    std::cout << "가장 최적화된 방식은 다른 방식(들)보다 ";
+    for (int i = 1; i < result.size(); i++)
+    {
+        std::cout << (i > 1 ? ", " : "");
+        std::cout << (float)(result[i] - result[0]) / (float)result[i] * 100.0f << "%";
+    }
+    std::cout << " 더 효율적입니다" << std::endl;
 
     return 0;
 }
