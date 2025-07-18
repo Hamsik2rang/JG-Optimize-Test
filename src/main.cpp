@@ -1,129 +1,151 @@
+//
+//  main.cpp
+//  JungleOptimizeTest
+//
+//  Created by Yongsik Im on 7/15/25.
+//
 #include "Predefine.h"
+#include "common.h"
 #include "simd.h"
+#include "particle.h"
 
 #include <iostream>
 #include <chrono>
 #include <string>
 #include <vector>
 
-#define N 10000
-int arr[N][N]{};
-
-uint64_t sum_row_major()
+int main(int argc, char** argv)
 {
-    uint64_t sum = 0;
-    for (int row = 0; row < N; row++)
+    int testIndex = 3;
+    if (argc > 1)
     {
-        for (int col = 0; col < N; col++)
+        testIndex = std::stoi(argv[1]);
+    }
+
+    srand((unsigned int)time(NULL));
+
+    std::vector<const char*> name;
+    std::vector<size_t> runtime;
+    std::vector<time_t> result;
+
+    size_t testCount = 0;
+
+    switch (testIndex)
+    {
+        case 0:
+        case 1:
+        case 2:
+            testCount = 2;
+            break;
+        case 3:
+            testCount = 3;
+            break;
+        default:
+            std::cout << "지원하지 않는 테스트 인덱스입니다." << std::endl;
+            return -1; // 프로세스 중료
+    }
+
+    assert(testCount > 0);
+    name.resize(testCount);
+    runtime.resize(testCount);
+    result.resize(testCount);
+
+    switch (testIndex)
+    {
+        case 0:
         {
-            sum += arr[row][col];
+            name[0] = FUNC_NAME(sum_row_major);
+            name[1] = FUNC_NAME(sum_col_major);
+
+            const int N = 10000;
+            const int M = 10000;
+
+            int** arr = new int*[N];
+            for (int i = 0; i < N; i++)
+            {
+                arr[i] = new int[M];
+                for (int j = 0; j < M; j++)
+                {
+                    arr[i][j] = rand() % 512;
+                }
+            }
+            WARM_UP_CACHE_START();
+            sum_row_major(arr, N, M);
+            sum_col_major(arr, N, M);
+            WARM_UP_CACHE_END();
+
+            ELAPSE_START(0)
+            sum_row_major(arr, N, M);
+            ELAPSE_END(0, result[0]);
+
+            // warm_Up
+            sum_col_major(arr, N, M);
+            ELAPSE_START(1)
+            sum_col_major(arr, N, M);
+            ELAPSE_END(1, result[1]);
         }
-    }
-
-    return sum;
-}
-
-uint64_t sum_col_major()
-{
-    uint64_t sum = 0;
-    for (int col = 0; col < N; col++)
-    {
-        for (int row = 0; row < N; row++)
+        break;
+        case 1:
         {
-            sum += arr[row][col];
+            name[0] = FUNC_NAME(multiply_matrix_simd);
+            name[1] = FUNC_NAME(multiply_matrix_scalar);
         }
+        break;
+        case 2:
+        {
+            name[0] = FUNC_NAME(multiply_many_matrix_simd);
+            name[1] = FUNC_NAME(multiply_many_matrix_scalar);
+        }
+        break;
+        case 3:
+        {
+            name[0] = FUNC_NAME(update_particle_position);
+            name[1] = FUNC_NAME(update_particle_position);
+            name[2] = FUNC_NAME(update_particle_position);
+
+            const size_t particleCount = 15000;
+            std::list<Particle> particle_aos_linked_list(particleCount);
+            Particle* particle_aos_array = new Particle[particleCount];
+            ParticleSOA<particleCount> particle_soa;
+
+            float deltaTime = (float)rand();
+            WARM_UP_CACHE_START();
+            update_particle_position(particle_aos_linked_list, particleCount, deltaTime);
+            update_particle_position(particle_aos_array, particleCount, deltaTime);
+            update_particle_position(particle_soa, particleCount, deltaTime);
+            WARM_UP_CACHE_END();
+
+            ELAPSE_START(0);
+            for (int i = 0; i < 1000000; i++)
+                update_particle_position(particle_aos_linked_list, particleCount, deltaTime);
+            ELAPSE_END(0, result[0]);
+
+            ELAPSE_START(1);
+            for (int i = 0; i < 1000000; i++)
+                update_particle_position(particle_aos_array, particleCount, deltaTime);
+            ELAPSE_END(1, result[1]);
+
+            ELAPSE_START(2)
+            for (int i = 0; i < 1000000; i++)
+                update_particle_position(particle_soa, particleCount, deltaTime);
+            ELAPSE_END(2, result[2]);
+        }
+        break;
+        case 4:
+        {
+        }
+        break;
+            //...
+        default:
+            break;
     }
-    
-    return sum;
-}
 
-matrix a;
-matrix b;
-
-int main()
-{
-    //    srand(time(NULL));
-    // --- 첫 번째 코드 블록 실행 및 시간 측정 ---
-
-    std::vector<matrix> lhs_matrix;
-    std::vector<matrix> rhs_matrix;
-    std::vector<matrix> result1, result2;
-    
-    lhs_matrix.resize(1024768);
-    rhs_matrix.resize(1024768);
-    
-    volatile uint64_t warm = sum_row_major();
-    warm = sum_col_major();
-    
-    multiply_many_matrix_simd(lhs_matrix, rhs_matrix, result1);
-    multiply_many_matrix_scalar(lhs_matrix, rhs_matrix, result2);
-
-    std::cout << "## sum_row_major 시작 ##" << std::endl;
-    auto start1 = std::chrono::high_resolution_clock::now();
-//    multiply_many_matrix_simd(lhs_matrix, rhs_matrix, result1);
-    uint64_t sum1 = sum_row_major();
-    
-    auto end1      = std::chrono::high_resolution_clock::now();
-    auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>(end1 - start1);
-
-    std::cout << "수행 시간 : " << duration1.count() / 1000 << " 밀리초" << std::endl;
     std::cout << "---------------------------------" << std::endl;
-
-    // --- 두 번째 코드 블록 실행 및 시간 측정 ---
-    std::cout << "## sum_col_major 시작 ##" << std::endl;
-    auto start2 = std::chrono::high_resolution_clock::now();
-
-//    multiply_many_matrix_scalar(lhs_matrix, rhs_matrix, result2);
-    auto sum2 = sum_col_major();
-
-    auto end2      = std::chrono::high_resolution_clock::now();
-    auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(end2 - start2);
-    
-    std::cout << "수행 시간 : " << duration2.count() / 1000 << " 밀리초" << std::endl;
-    std::cout << "---------------------------------" << std::endl;
-
-    // --- 결과 비교 및 시간 비교 ---
-    std::cout << "## 최종 비교 ##" << std::endl;
-
-    // 1. 결과가 동일한지 비교
-//    bool isSame = true;
-//    size_t resultSize = result1.size();
-//    for(size_t i = 0; i < resultSize; i++)
-//    {
-//        if (result1[i] != result2[i])
-//        {
-//            isSame = false;
-//            break;
-//        }
-//    }
-//    if (isSame)
-    if(sum1 == sum2)
+    for (int i = 0; i < testCount; i++)
     {
-        std::cout << "Success: results are same." << std::endl;
-    }
-    else
-    {
-        std::cout << "Error: results are not same." << std::endl;
+        std::cout << "## " << i << "번 함수 " << name[0] << " 수행 시간 : " << result[0] / 1000 << " 밀리초" << std::endl;
+        std::cout << "---------------------------------" << std::endl;
     }
 
-    // 2. 시간 비교
-    if (duration1 < duration2)
-    {
-        auto diff = (duration2 - duration1).count();
-        float diff_percentage = (float)diff / (float)duration1.count() * 100.0f;
-        std::cout << "sum_row_major is " << diff / 1000 << "ms(" << diff_percentage<< "%) faster." << std::endl;
-    }
-    else if (duration2 < duration1)
-    {
-        auto diff = (duration1 - duration2).count();
-        float diff_percentage = (float)diff / (float)duration2.count() * 100.0f;
-        std::cout << "sum_row_major is " << diff / 1000 << "ms(" << diff_percentage<< "%) faster." << std::endl;
-    }
-    else
-    {
-        std::cout << "⌛ Same speed" << std::endl;
-    }
-
-    // --- 종료 ---
     return 0;
 }

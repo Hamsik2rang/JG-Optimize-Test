@@ -1,6 +1,6 @@
 //
 //  common.h
-//  OptTest
+//  JungleOptimizeTest
 //
 //  Created by Yongsik Im on 7/14/25.
 //
@@ -9,6 +9,8 @@
 #define __COMMON_H__
 
 #include "Predefine.h"
+
+#pragma region >>> Objects
 
 struct Matrix
 {
@@ -73,59 +75,22 @@ struct Vector
     {
         return !(*this == rhs);
     }
+    
+    float& operator[](int index)
+    {
+        assert(size > index && index >=0);
+        return data[index];
+    }
 
     float* data;
     size_t size;
 };
+#pragma endregion
 
-struct Material
-{
-    
-};
+#pragma region >>> Global Functions
+uint64_t sum_row_major(int** arr, int N, int M);
+uint64_t sum_col_major(int** arr, int N, int M);
 
-struct Mesh
-{
-    
-};
-// AOS - Array of Structs
-
-
-//
-//struct Monster
-//{
-//    Vector position;
-//    Vector rotation;
-//    Vector scale;
-//    
-//    Material material;
-//    Mesh mesh;
-//
-//    int hp;
-//    float atk;
-//    float def;
-//    float speed;
-//};
-//
-//Monster monster_list[1500];
-
-
-struct Monster
-{
-    Vector position[1500];
-    Vector rotation[1500];
-    Vector scale[1500];
-    
-    Material material[1500];
-    Mesh mesh[1500];
-    
-    int hp[1500];
-    float atk[1500];
-    float def[1500];
-    float speed[1500];
-};
-
-Monster monster_list;
-
-
+#pragma endregion
 
 #endif

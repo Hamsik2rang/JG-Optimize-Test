@@ -1,6 +1,6 @@
 //
 //  Predefine.h
-//  OptTest
+//  JungleOptimizeTest
 //
 //  Created by Yongsik Im on 7/14/25.
 //
@@ -35,5 +35,38 @@
 #endif
 
 #define FLT_EPSILON (1.09e-07)
+#define PASTE(a, b) a##b
+
+
+#define FUNC_NAME(func) #func
+#define ELAPSE_START(n) auto PASTE(start, n) = std::chrono::high_resolution_clock::now();
+#define ELAPSE_END(n, result) auto PASTE(end, n)= std::chrono::high_resolution_clock::now(); \
+auto PASTE(duration, n) = std::chrono::duration_cast<std::chrono::microseconds>(end##n - start##n); \
+result = duration##n.count();
+
+// 10개 이상의 인수는 없을 걸로 예상...
+#define NARGS(...) NARGS_IMPL(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+#define NARGS_IMPL(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, N, ...) N
+
+#define CALL_FUNC_0(func) func()
+#define CALL_FUNC_N(func, ...) func(__VA_ARGS__)
+
+#define TEST_FUNC_DISPATCH(func, n, ...) \
+TEST_FUNC_DISPATCH_IMPL(func, n, __VA_ARGS__)
+
+#define TESE_FUNC_DISPATCH_IMPL(func, n, ...) \
+CALL_FUNC_##n(func, __VA_ARGS__)
+
+#define TEST_FUNC(func, ...) \
+TEST_FUNC_DISPATCH(func, \
+NARGS(__VA_ARGS__), \
+__VA_ARGS__)
+
+#define WARM_UP_CACHE_START() \
+int index = 3; \
+while(index-- > 0) \
+{\
+
+#define WARM_UP_CACHE_END() }
 
 #endif

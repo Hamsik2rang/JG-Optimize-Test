@@ -1,12 +1,12 @@
 //
 //  simd.cpp
-//  OptTest
+//  JungleOptimizeTest
 //
 //  Created by Yongsik Im on 7/14/25.
 //
 #include "simd.h"
 
-void multiply_matrix_simd(const matrix& lhs, const matrix& rhs, matrix& result)
+void multiply_matrix_simd(const Matrix& lhs, const Matrix& rhs, Matrix& result)
 {
     assert(lhs.col == rhs.row);
     size_t len = lhs.col;
@@ -54,7 +54,7 @@ void multiply_matrix_simd(const matrix& lhs, const matrix& rhs, matrix& result)
 #endif
 }
 
-void multiply_matrix_scalar(const matrix& lhs, const matrix& rhs, matrix& result)
+void multiply_matrix_scalar(const Matrix& lhs, const Matrix& rhs, Matrix& result)
 {
     assert(lhs.col == rhs.row);
     size_t len = lhs.col;
@@ -75,7 +75,7 @@ void multiply_matrix_scalar(const matrix& lhs, const matrix& rhs, matrix& result
     }
 }
 
-void multiply_many_matrix_simd(const std::vector<matrix>& lhs, const std::vector<matrix>& rhs, std::vector<matrix>& result)
+void multiply_many_matrix_simd(const std::vector<Matrix>& lhs, const std::vector<Matrix>& rhs, std::vector<Matrix>& result)
 {
     assert(lhs.size() == rhs.size());
     size_t count = lhs.size();
@@ -87,7 +87,7 @@ void multiply_many_matrix_simd(const std::vector<matrix>& lhs, const std::vector
     }
 }
 
-void multiply_many_matrix_scalar(const std::vector<matrix>& lhs, const std::vector<matrix>& rhs, std::vector<matrix>& result)
+void multiply_many_matrix_scalar(const std::vector<Matrix>& lhs, const std::vector<Matrix>& rhs, std::vector<Matrix>& result)
 {
     assert(lhs.size() == rhs.size());
     size_t count = lhs.size();
