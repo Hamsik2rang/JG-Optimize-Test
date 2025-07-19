@@ -1,4 +1,4 @@
-//
+﻿//
 //  Predefine.h
 //  JungleOptimizeTest
 //
@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <cassert>
 #include <numeric>
+#include <string>
 
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
     #include <immintrin.h>
@@ -35,7 +36,6 @@
     #define FORCEINLINE inline
 #endif
 
-#define FLT_EPSILON (1.09e-07)
 #define PASTE(a, b) a##b
 
 

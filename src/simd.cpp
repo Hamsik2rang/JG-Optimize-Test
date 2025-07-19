@@ -1,4 +1,4 @@
-//
+﻿//
 //  simd.cpp
 //  JungleOptimizeTest
 //
@@ -22,15 +22,15 @@ int multiply_matrix_simd(const Matrix& lhs, const Matrix& rhs, Matrix& result)
             for (int k = 0; k < col; ++k)
             {
                 // A[i][k] 값을 4개의 float 벡터로 브로드캐스트
-                __m128 a_vec = _mm_set1_ps(&(lhs[i * row + k]));
+                __m128 a_vec = _mm_set_ps1(lhs.data[i * lhs.row + k]);
                 // B[k][j]부터 4개의 float를 벡터 레지스터로 로드
-                __m128 b_vec = _mm_loadu_ps(&(rhs[k * row + j]));
+                __m128 b_vec = _mm_loadu_ps(&(rhs.data[k * rhs.row + j]));
                 
                 // 곱셈-누적 연산: c_vec = (a_vec * b_vec) + c_vec
                 c_vec = _mm_add_ps(c_vec, _mm_mul_ps(a_vec, b_vec));
             }
             // 최종 결과를 메모리(C[i][j])에 저장
-            _mm_storeu_ps(&(result[i * row + j]), c_vec);
+            _mm_storeu_ps(&(result.data[i * row + j]), c_vec);
         }
     }
 #elif USE_NEON

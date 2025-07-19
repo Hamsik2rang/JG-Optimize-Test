@@ -1,4 +1,4 @@
-//
+﻿//
 //  common.cpp
 //  JungleOptimizeTest
 //
@@ -33,3 +33,36 @@ uint64_t sum_col_major(int** arr, int N, int M)
     
     return sum;
 }
+
+uint32_t djb2(const char* str)
+{
+    uint32_t hash = 5381;
+    int c;
+    while ((c = *str++))
+    {
+        hash = ((hash << 5) + hash) + c;
+    }
+    return hash;
+}
+
+bool FixedString::IsEqual(const FixedString& rhs) const
+{
+    return hash == rhs.hash;
+}
+
+
+
+//
+//
+//if (length == rhs.length)
+//{
+//    for (size_t i = 0; i < length; i++)
+//    {
+//        if (data[i] != rhs.data[i])
+//        {
+//            return false;
+//        }
+//    }
+//    return true;
+//}
+//return false;

@@ -1,4 +1,4 @@
-//
+﻿//
 //  particle.h
 //  JungleOptimizeTest
 //
@@ -29,6 +29,18 @@ struct ParticleSOA
     , leftTime(new float[size])
     , count((uint32_t)size)
     {}
+
+    ~ParticleSOA()
+    {
+		if (position) delete[] position;
+		if (velocity) delete[] velocity;
+		if (color) delete[] color;
+		if (leftTime) delete[] leftTime;
+		position = nullptr;
+		velocity = nullptr;
+		color = nullptr;
+		leftTime = nullptr;
+    }
     
     Vector* position; // 16bytes
     Vector* velocity;
