@@ -18,7 +18,7 @@
 
 int main(int argc, char** argv)
 {
-	int testIndex = 5; // command args 사용하기 귀찮으면 이 값을 원하는 케이스 인덱스로 변경하세요.
+	int testIndex = 3; // command args 사용하기 귀찮으면 이 값을 원하는 케이스 인덱스로 변경하세요.
 	if (argc > 1)
 	{
 		testIndex = std::stoi(argv[1]);
@@ -145,7 +145,7 @@ int main(int argc, char** argv)
 		name[1] = FUNC_NAME(update_particle_position_aos_array);
 		name[2] = FUNC_NAME(update_particle_position_soa_array);
 
-		const size_t particleCount = 2'000'000;
+		const size_t particleCount = 10'000'000;
 		const size_t frameCount = 100;
 		std::list<Particle> particle_aos_linked_list(particleCount);
 		Particle* particle_aos_array = new Particle[particleCount];
