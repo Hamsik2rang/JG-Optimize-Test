@@ -1,4 +1,10 @@
-﻿#include "monster.h"
+﻿//
+//  monster.cpp
+//  JungleOptimizeTest
+//
+//  Created by Yongsik Im on 7/19/25.
+//
+#include "monster.h"
 #include <unordered_map>
 
 Player* s_player = new Player();

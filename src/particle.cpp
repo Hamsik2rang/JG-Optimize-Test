@@ -1,8 +1,8 @@
-//
+﻿//
 //  particle.cpp
 //  JungleOptimizeTest
 //
-//  Created by Yongsik Im on 7/14/25.
+//  Created by Yongsik Im on 7/18/25.
 //
 #include "particle.h"
 #include "utility.h"

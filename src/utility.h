@@ -27,6 +27,8 @@ private:
     static std::mt19937_64 s_engine;
 };
 
+bool fltcmp(void* src, void* dst, size_t count);
+
 // HashCombineFast in Unreal Engine
 uint32_t HashCombine(uint32_t a, uint32_t b);
 uint32_t PointerHash(const void* key);

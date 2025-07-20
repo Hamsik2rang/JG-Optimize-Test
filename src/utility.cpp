@@ -51,6 +51,21 @@ bool Random::NextBool()
 	return dis(s_engine) == 1;
 }
 
+
+bool fltcmp(void* src, void* dst, size_t count)
+{
+    float* fsrc = (float*)src;
+    float* fdst = (float*)dst;
+    while (count--)
+    {
+        if (std::fabsf(fsrc - fdst) > 0.01f)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 // 'HashCombineFast()' in Unreal Engine
 uint32_t HashCombine(uint32_t a, uint32_t b)
 {

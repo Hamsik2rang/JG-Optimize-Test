@@ -15,16 +15,32 @@
 
 struct Matrix
 {
-    Matrix(size_t row = 4, size_t col = 4, bool fillZero = true)
-        : row(row)
-        , col(col)
-        , data(new float[row * col])
+    Matrix(size_t r = 4, size_t c = 4, bool fillZero = true)
+        : row(r)
+        , col(c)
+        , data(new float[r * c] { 0.0f })
     {
         for (size_t i = 0; i < row * col; i++)
         {
             data[i] = fillZero ? 0.0f : Random::NextFloat();
         }
     }
+    Matrix(const Matrix& m)
+        : row(m.row)
+        , col(m.col)
+        , data(new float[m.row * m.col] { 0.0f })
+    {
+        memcpy(data, m.data, sizeof(float) * row * col);
+    }
+
+    Matrix(Matrix&& m)
+        : row(m.row)
+        , col(m.col)
+        , data(m.data)
+    {
+        m.data = nullptr;
+    }
+
     ~Matrix() { delete[] data; }
 
     bool operator==(const Matrix& rhs)
@@ -45,24 +61,63 @@ struct Matrix
         return true;
     }
 
+    Matrix& operator=(const Matrix& m)
+    {
+        if ((m.row != row || m.col != col) && data)
+        {
+            delete data;
+            data = new(data) float[m.row * m.col];
+        }
+        row = m.row;
+        col = m.col;
+        
+        memcpy(data, m.data, sizeof(float) * row * col);
+
+        return *this;
+    }
+
+    Matrix& operator=(Matrix&& m)
+    {
+        row = m.row;
+        col = m.col;
+        data = m.data;
+        m.data = nullptr;
+
+        return *this;
+    }
+
+    float& At(int row, int col)
+    {
+        return *(data + (row * this->col + col));
+    }
+
+    float At(int row, int col) const
+    {
+        return *(data + (row * this->col + col));
+    }
+
+    float* WriteRef(int row, int col)
+    {
+        return (data + (row * this->col + col));
+    }
+
+    const float* ReadRef(int row, int col) const
+    {
+        return (data + (row * this->col + col));
+    }
+
     bool operator!=(const Matrix& rhs)
     {
         return !(*this == rhs);
     }
 
-    Matrix& operator[](int index)
+    float& operator[](int index)
     {
 		assert(row > index && index >= 0);
-        return *this;
+        return data[index];
     }
 
-    const Matrix& operator[](int index) const
-    {
-        assert(row > index && index >= 0);
-        return *this;
-    }
-
-    float* data;
+    float* data = nullptr;
     size_t row;
     size_t col;
 };

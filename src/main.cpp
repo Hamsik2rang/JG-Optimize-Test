@@ -18,7 +18,7 @@
 
 int main(int argc, char** argv)
 {
-	int testIndex = 3; // command args 사용하기 귀찮으면 이 값을 원하는 케이스 인덱스로 변경하세요.
+	int testIndex = 1; // command args 사용하기 귀찮으면 이 값을 원하는 케이스 인덱스로 변경하세요.
 	if (argc > 1)
 	{
 		testIndex = std::stoi(argv[1]);
@@ -94,23 +94,28 @@ int main(int argc, char** argv)
 		name[0] = FUNC_NAME(multiply_matrix_simd);
 		name[1] = FUNC_NAME(multiply_matrix_scalar);
 
-		Matrix mat1(1024, 1024, false);
-		Matrix mat2(1024, 1024, false);
-		Matrix mat3(1024, 1024, true);
+		Matrix mat1(1024, 1024);
+		Matrix mat2(1024, 1024);
+		Matrix matResult1(1024, 1024);
+		Matrix matResult2(1024, 1024);
+
+		set_random_matrix_elements(mat1);
+		set_random_matrix_elements(mat2);
 
 		WARM_UP_CACHE_START();
-		returnIndex = multiply_matrix_simd(mat1, mat2, mat3);
-		returnIndex = multiply_matrix_scalar(mat1, mat2, mat3);
+		returnIndex = multiply_matrix_simd(mat1, mat2, matResult1);
+		returnIndex = multiply_matrix_scalar(mat1, mat2, matResult2);
 		WARM_UP_CACHE_END();
 
 		ELAPSE_START(0);
-		returnIndex = multiply_matrix_simd(mat1, mat2, mat3);
+		returnIndex = multiply_matrix_simd(mat1, mat2, matResult1);
 		ELAPSE_END(0, result[0]);
 
 		ELAPSE_START(1);
-		returnIndex = multiply_matrix_scalar(mat1, mat2, mat3);
+		returnIndex = multiply_matrix_scalar(mat1, mat2, matResult2);
 		ELAPSE_END(1, result[1]);
 
+		VALIDATE(fltcmp(matResult1.data, matResult2.data, sizeof(float) * 1024 * 1024), 0);
 		VALIDATE(returnIndex, testIndex);
 	}
 	break;
@@ -123,20 +128,27 @@ int main(int argc, char** argv)
 
 		std::vector<Matrix> mat1(matrixCount);
 		std::vector<Matrix> mat2(matrixCount);
-		std::vector<Matrix> mat3(matrixCount);
+		std::vector<Matrix> matResult1(matrixCount);
+		std::vector<Matrix> matResult2(matrixCount);
 
 		WARM_UP_CACHE_START();
-		returnIndex = multiply_many_matrix_simd(mat1, mat2, mat3);
-		returnIndex = multiply_many_matrix_scalar(mat1, mat2, mat3);
+		returnIndex = multiply_many_matrix_simd(mat1, mat2, matResult1);
+		returnIndex = multiply_many_matrix_scalar(mat1, mat2, matResult2);
 		WARM_UP_CACHE_END();
 
-		ELAPSE_START(0)
-			returnIndex = multiply_many_matrix_simd(mat1, mat2, mat3);
+		ELAPSE_START(0);
+		returnIndex = multiply_many_matrix_simd(mat1, mat2, matResult1);
 		ELAPSE_END(0, result[0]);
 
-		ELAPSE_START(1)
-			returnIndex = multiply_many_matrix_scalar(mat1, mat2, mat3);
+		ELAPSE_START(1);
+		returnIndex = multiply_many_matrix_scalar(mat1, mat2, matResult2);
 		ELAPSE_END(1, result[1]);
+
+		VALIDATE(returnIndex, testIndex);
+		for (size_t i = 0; i < matrixCount; i++)
+		{
+			VALIDATE(fltcmp(matResult1[i].data, matResult2[i].data, 4 * 4), 0);
+		}
 	}
 	break;
 	case 3:
@@ -225,7 +237,7 @@ int main(int argc, char** argv)
 		name[0] = FUNC_NAME(count_monster_by_attributes);
 		name[1] = FUNC_NAME(count_monster_by_hash);
 
-		const size_t monsterCount = 10'000'000;
+		const size_t monsterCount = 1'000'000;
 		const size_t frameCount = 100;
 		Mesh* baseMesh = new Mesh();
 		Material* baseMaterial = new Material();
@@ -347,16 +359,23 @@ int main(int argc, char** argv)
 		break;
 	}
 
+	int minIndex = 0;
+	time_t minTime = std::numeric_limits<long long>::max();
 	std::cout << "---------------------------------" << std::endl;
 	for (int i = 0; i < testCount; i++)
 	{
 		std::wcout << "## " << i << "번 함수 " << name[i] << " 수행 시간 : " << result[i] / 1000 << " 밀리초" << std::endl;
 		std::wcout << "---------------------------------" << std::endl;
+		if (minTime > result[i])
+		{
+			minIndex = i;
+			minTime = result[i];
+		}
 	}
 
 	std::sort(result.begin(), result.end());
 
-	std::wcout << "가장 최적화된 방식은 다른 방식(들)보다 각각 ";
+	std::wcout << "가장 최적화된 방식인 " << name[minIndex] << " 는 다른 방식(들)보다 각각 ";
 	for (int i = 1; i < result.size(); i++)
 	{
 		std::wcout << (i > 1 ? ", " : "");
