@@ -66,3 +66,8 @@ bool FixedString::IsEqual(const FixedString& rhs) const
 //    return true;
 //}
 //return false;
+
+size_t get_size()
+{
+    return (size_t)100000;
+}

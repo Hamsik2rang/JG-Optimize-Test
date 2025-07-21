@@ -10,6 +10,8 @@
 #include "particle.h"
 #include "utility.h"
 #include "monster.h"
+#include "ilp.h"
+#include "allocator.h"
 
 #include <iostream>
 #include <chrono>
@@ -18,7 +20,7 @@
 
 int main(int argc, char** argv)
 {
-	int testIndex = 1; // command args 사용하기 귀찮으면 이 값을 원하는 케이스 인덱스로 변경하세요.
+	int testIndex = 11; // command args 사용하기 귀찮으면 이 값을 원하는 케이스 인덱스로 변경하세요.
 	if (argc > 1)
 	{
 		testIndex = std::stoi(argv[1]);
@@ -41,6 +43,9 @@ int main(int argc, char** argv)
 	case 4:
 	case 5:
 	case 6:
+	case 9:
+	case 10:
+	case 11:
 		testCount = 2;
 		break;
 	case 3:
@@ -352,6 +357,126 @@ int main(int argc, char** argv)
 		}
 		VALIDATE(returnIndex[0], testIndex);
 		VALIDATE(returnIndex[1], testIndex);
+	}
+	break;
+	case 9:
+	{
+		volatile int result = 0;
+		result = branch_dependency();
+		result = branch_dependency_none();
+		return 0;
+	}
+	break;
+	case 10:
+	{
+		StackAllocator* allocator = StackAllocator::GetInstance();
+		name[0] = FUNC_NAME(default_allocator_allocate);
+		name[1] = FUNC_NAME(stack_allocator_allocate);
+
+		const size_t allocSize = 1024 * 1024 * 400; // 400MB
+		const size_t frameCount = 1000;
+
+		WARM_UP_CACHE_START();
+		allocator->Allocate(1024 * 1024);
+		allocator->Flush();
+		char* p = new char[1024 * 1024];
+		delete p;
+		WARM_UP_CACHE_END();
+
+		size_t allocatedSize[2]{ 0 };
+		ELAPSE_START(0);
+		for (size_t i = 0; i < frameCount; i++)
+		{
+			size_t remainSize = allocSize;
+			while (remainSize)
+			{
+				size_t size = Random::NextUInt64(1, std::min((size_t)1024 * 32, remainSize));
+				remainSize -= size;
+				allocatedSize[0] += size;
+				volatile char* p = new char[size];
+				volatile int someResult = do_something_for_allocate();
+				delete[] p;
+			}
+		}
+		ELAPSE_END(0, result[0]);
+
+
+		ELAPSE_START(1);
+		for (size_t i = 0; i < frameCount; i++)
+		{
+			size_t remainSize = allocSize;
+			while (remainSize)
+			{
+				size_t size = Random::NextUInt64(1, std::min((size_t)1024 * 32, remainSize));
+				remainSize -= size;
+				allocatedSize[1] += size;
+				volatile char* p = (char*)allocator->Allocate(size);
+				volatile int someResult = do_something_for_allocate();
+			}
+			allocator->Flush();
+		}
+		ELAPSE_END(1, result[1]);
+
+		VALIDATE(allocatedSize[0], allocatedSize[1]);
+	}
+	break;
+	case 11:
+	{
+		PoolAllocator* allocator = PoolAllocator::GetInstance(64);
+		name[0] = FUNC_NAME(default_allocator_allocate);
+		name[1] = FUNC_NAME(pool_allocator_allocate);
+
+		WARM_UP_CACHE_START();
+		char* p = (char*)allocator->Allocate();
+		allocator->Deallocate(p);
+		p = new char[64];
+		delete p;
+		WARM_UP_CACHE_END();
+
+
+		size_t allocatedObjectCount[2]{ 0 };
+		const size_t objectCount = 750'000;  // 64 * 750'000 = 48MiB
+		const size_t frameCount = 1000;
+		ELAPSE_START(0);
+		for (size_t i = 0; i < frameCount; i++)
+		{
+			size_t remainCount = objectCount;
+			while (remainCount)
+			{
+				size_t count = Random::NextUInt64(1, std::min((size_t)1024, remainCount));
+				remainCount -= count;
+				allocatedObjectCount[0] += count;
+				for (size_t j = 0; j < count; j++)
+				{
+					volatile char* p = new char[64];
+					volatile int someResult = do_something_for_allocate();
+					delete[] p;
+				}
+			}
+		}
+		ELAPSE_END(0, result[0]);
+
+		ELAPSE_START(1);
+		for (size_t i = 0; i < frameCount; i++)
+		{
+			size_t remainCount = objectCount;
+			while (remainCount)
+			{
+				size_t count = Random::NextUInt64(1, std::min((size_t)1024, remainCount));
+				remainCount-= count;
+				allocatedObjectCount[1] += count;
+				for (size_t j = 0; j < count; j++)
+				{
+					volatile char* p = (char*)allocator->Allocate();
+					volatile int someResult = do_something_for_allocate();
+					allocator->Deallocate((void*)p);
+				}
+			}
+		}
+		ELAPSE_END(1, result[1]);
+		allocator->Destroy();
+
+		VALIDATE(allocatedObjectCount[0], allocatedObjectCount[1]);
 	}
 	break;
 	//...

@@ -201,29 +201,6 @@ struct FixedString
     uint32_t hash;
 };
 
-
-//bool operator==(const String& rhs) const
-//{
-//       return IsEqual(rhs);
-   //}
-
-   //bool operator!=(const String& rhs) const
-   //{
-   //	return !(*this == rhs);
-   //}
-
-
-//   bool IsEqualHash(const String& rhs)
-//   {
-   //	if (length == rhs.length)
-   //	{
-//           // return hash == rhs.hash;
-   //	}
-   //	return false;
-//   }
-//   
-
-
 template <typename T>
 struct Hasher
 {
@@ -251,6 +228,7 @@ uint64_t sum_col_major(int** arr, int N, int M);
 bool compare_string_naive(const std::string& str1, const std::string& str2);
 bool compare_string_hash(const std::string& str1, const std::string& str2);
 
+size_t get_size();
 
 #pragma endregion
 

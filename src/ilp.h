@@ -14,5 +14,8 @@ int war_dependency();
 int raw_dependency();
 int waw_dependency();
 
+int memory_dependency();
 
+int branch_dependency();
+int branch_dependency_none();
 #endif
