@@ -72,7 +72,7 @@ public:
 	void Destroy();
 
 	// 실제로는 C++의 Template등으로 크기 지정
-	static PoolAllocator* GetInstance(size_t chunkSize)
+	static PoolAllocator* GetInstance(size_t chunkSize = 64)
 	{
 		if (!s_instance)
 		{
@@ -87,7 +87,17 @@ public:
 private:
 	PoolAllocator(size_t chunkSize)
 		: chunkSize(chunkSize)
-	{}
+		, freeListHead(nullptr)
+	{
+		buffer = new char[blockSize];
+		freeListHead = (Chunk*)buffer;
+		for (size_t i = 0; i < blockSize / chunkSize; ++i)
+		{
+			Chunk* chunk = reinterpret_cast<Chunk*>(buffer + i * chunkSize);
+			chunk->next = freeListHead;
+			freeListHead = chunk;
+		}
+	}
 	~PoolAllocator() { Destroy(); }
 
 	char* buffer;

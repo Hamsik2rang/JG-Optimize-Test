@@ -12,6 +12,7 @@
 #include "monster.h"
 #include "ilp.h"
 #include "allocator.h"
+#include "lock.h"
 
 #include <iostream>
 #include <chrono>
@@ -20,7 +21,7 @@
 
 int main(int argc, char** argv)
 {
-	int testIndex = 11; // command args 사용하기 귀찮으면 이 값을 원하는 케이스 인덱스로 변경하세요.
+	int testIndex = 13; // command args 사용하기 귀찮으면 이 값을 원하는 케이스 인덱스로 변경하세요.
 	if (argc > 1)
 	{
 		testIndex = std::stoi(argv[1]);
@@ -46,6 +47,8 @@ int main(int argc, char** argv)
 	case 9:
 	case 10:
 	case 11:
+	case 12:
+	case 13:
 		testCount = 2;
 		break;
 	case 3:
@@ -436,7 +439,7 @@ int main(int argc, char** argv)
 
 		size_t allocatedObjectCount[2]{ 0 };
 		const size_t objectCount = 750'000;  // 64 * 750'000 = 48MiB
-		const size_t frameCount = 1000;
+		const size_t frameCount = 10;
 		ELAPSE_START(0);
 		for (size_t i = 0; i < frameCount; i++)
 		{
@@ -463,7 +466,7 @@ int main(int argc, char** argv)
 			while (remainCount)
 			{
 				size_t count = Random::NextUInt64(1, std::min((size_t)1024, remainCount));
-				remainCount-= count;
+				remainCount -= count;
 				allocatedObjectCount[1] += count;
 				for (size_t j = 0; j < count; j++)
 				{
@@ -479,6 +482,62 @@ int main(int argc, char** argv)
 		VALIDATE(allocatedObjectCount[0], allocatedObjectCount[1]);
 	}
 	break;
+	case 12:
+	{
+		name[0] = FUNC_NAME(parallel_level_0_spinlock);
+		name[1] = FUNC_NAME(parallel_level_0_mutex);
+
+		const size_t threadCount = std::thread::hardware_concurrency();
+		const size_t loopCount = 1'000'000;
+		int64_t count[2]{ 0, 0 };
+		WARM_UP_CACHE_START();
+		do_something_in_parallel_with_spinlock(threadCount, loopCount, 0, count[0]);
+		do_something_in_parallel_with_mutex(threadCount, loopCount, 0, count[1]);
+		WARM_UP_CACHE_END();
+
+		count[0] = 0;
+		count[1] = 0;
+		ELAPSE_START(0);
+		volatile int returnValue0 = do_something_in_parallel_with_spinlock(threadCount, loopCount, 0, count[0]);
+		ELAPSE_END(0, result[0]);
+
+		ELAPSE_START(1);
+		volatile int returnValue1 = do_something_in_parallel_with_mutex(threadCount, loopCount, 0, count[1]);
+		ELAPSE_END(1, result[1]);
+
+		VALIDATE(returnValue0, returnValue1);
+		VALIDATE(count[0], count[1]);
+	}
+	break;
+	case 13:
+	{
+		name[0] = FUNC_NAME(parallel_pool_alloc_spinlock);
+		name[1] = FUNC_NAME(parallel_pool_alloc_mutex);
+
+		const size_t threadCount = std::thread::hardware_concurrency();
+		std::vector<std::thread> threads;
+
+		size_t allocatedObjectCount[2]{ 0 };
+		const size_t objectCount = 750'000;  // 64 * 750'000 = 48MiB
+		const size_t frameCount = 100;
+
+		WARM_UP_CACHE_START();
+		do_allocate_in_parallel_mutex(threadCount, objectCount, frameCount);
+		do_allocate_in_parallel_spinlock(threadCount, objectCount, frameCount);
+		WARM_UP_CACHE_END();
+
+		ELAPSE_START(0);
+		allocatedObjectCount[0] = do_allocate_in_parallel_spinlock(threadCount, objectCount, frameCount);
+		ELAPSE_END(0, result[0]);
+
+		ELAPSE_START(1);
+		allocatedObjectCount[1] = do_allocate_in_parallel_mutex(threadCount, objectCount, frameCount);
+		ELAPSE_END(1, result[1]);
+
+		VALIDATE(allocatedObjectCount[0], allocatedObjectCount[1]);
+	}
+	break;
+
 	//...
 	default:
 		break;
