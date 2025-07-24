@@ -154,6 +154,22 @@ private:
 SpinLockPoolAllocator* SpinLockPoolAllocator::s_instance;
 MutexPoolAllocator* MutexPoolAllocator::s_instance;
 
+
+
+void work_lock_free_level_0(std::atomic<int64_t>& counter, size_t loopCount)
+{
+	for (size_t i = 0; i < loopCount; i++)
+	{
+		size_t another_count = Random::NextUInt64(100, 5500);
+		for (volatile size_t j = 0; j < another_count; j++)
+		{
+			volatile size_t dummy = j * 2;
+		}
+		__debugbreak();
+		counter++;
+	}
+}
+
 void work_spinlock_level_0(SpinLock& lock, int64_t& counter, size_t loopCount)
 {
 	for (size_t i = 0; i < loopCount; i++)
@@ -161,7 +177,7 @@ void work_spinlock_level_0(SpinLock& lock, int64_t& counter, size_t loopCount)
 		size_t another_count = Random::NextUInt64(100, 5500);
 		for (volatile size_t j = 0; j < another_count; j++)
 		{
-			volatile int dummy = j * 2;
+			volatile size_t dummy = j * 2;
 		}
 
 		lock.Lock();
@@ -184,6 +200,25 @@ void work_mutex_level_0(std::mutex& lock, int64_t& counter, size_t loopCount)
 		counter++;
 		lock.unlock();
 	}
+}
+
+int do_something_in_parallel_with_lock_free(size_t threadCount, size_t loopCount, int workLevel, int64_t& result)
+{
+	std::vector<std::thread> threads;
+	std::atomic<int64_t> count;
+	for (int i = 0; i < threadCount; i++)
+	{
+		threads.emplace_back(work_lock_free_level_0, std::ref(count), loopCount);
+	}
+
+	for (auto& thread : threads)
+	{
+		thread.join();
+	}
+
+	result = count;
+
+	return 14;
 }
 
 int do_something_in_parallel_with_spinlock(size_t threadCount, size_t loopCount, int workLevel, int64_t& result)

@@ -35,11 +35,24 @@ private:
 	std::atomic_flag flag = ATOMIC_FLAG_INIT;
 };
 
+int do_something_in_parallel_with_lock_free(size_t threadCount, size_t loopCount, int workLevel, int64_t& result);
 int do_something_in_parallel_with_spinlock(size_t threadCount, size_t loopCount, int workLevel, int64_t& result);
 int do_something_in_parallel_with_mutex(size_t threadCount, size_t loopCount, int workLevel, int64_t& result);
 
 size_t do_allocate_in_parallel_spinlock(size_t threadCount, size_t objectCount, size_t frameCount);
 size_t do_allocate_in_parallel_mutex(size_t threadCount, size_t objectCount, size_t frameCount);
 
+class LockFreeQueue
+{
+public:
+
+
+private:
+	struct Node
+	{
+		void* data;
+		void* node;
+	};
+};
 
 #endif

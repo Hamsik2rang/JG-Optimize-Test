@@ -21,10 +21,10 @@
 
 int main(int argc, char** argv)
 {
-	int testIndex = 13; // command args 사용하기 귀찮으면 이 값을 원하는 케이스 인덱스로 변경하세요.
+	int testCaseIndex =4; // command args 사용하기 귀찮으면 이 값을 원하는 케이스 인덱스로 변경하세요.
 	if (argc > 1)
 	{
-		testIndex = std::stoi(argv[1]);
+		testCaseIndex = std::stoi(argv[1]);
 	}
 
 	Random::Init();
@@ -33,10 +33,10 @@ int main(int argc, char** argv)
 	std::vector<size_t> runtime;
 	std::vector<time_t> result;
 
-	size_t testCount = 0;
+	size_t testSize = 0;
 	volatile int returnIndex;
 
-	switch (testIndex)
+	switch (testCaseIndex)
 	{
 	case 0:
 	case 1:
@@ -49,22 +49,23 @@ int main(int argc, char** argv)
 	case 11:
 	case 12:
 	case 13:
-		testCount = 2;
+		testSize = 2;
 		break;
 	case 3:
-		testCount = 3;
+	case 14:
+		testSize = 3;
 		break;
 	default:
 		std::cout << "지원하지 않는 테스트 인덱스입니다." << std::endl;
 		return -1; // 프로세스 중료
 	}
 
-	assert(testCount > 0);
-	name.resize(testCount);
-	runtime.resize(testCount);
-	result.resize(testCount);
+	assert(testSize > 0);
+	name.resize(testSize);
+	runtime.resize(testSize);
+	result.resize(testSize);
 
-	switch (testIndex)
+	switch (testCaseIndex)
 	{
 	case 0:
 	{
@@ -124,7 +125,7 @@ int main(int argc, char** argv)
 		ELAPSE_END(1, result[1]);
 
 		VALIDATE(fltcmp(matResult1.data, matResult2.data, sizeof(float) * 1024 * 1024), 0);
-		VALIDATE(returnIndex, testIndex);
+		VALIDATE(returnIndex, testCaseIndex);
 	}
 	break;
 	case 2:
@@ -152,7 +153,7 @@ int main(int argc, char** argv)
 		returnIndex = multiply_many_matrix_scalar(mat1, mat2, matResult2);
 		ELAPSE_END(1, result[1]);
 
-		VALIDATE(returnIndex, testIndex);
+		VALIDATE(returnIndex, testCaseIndex);
 		for (size_t i = 0; i < matrixCount; i++)
 		{
 			VALIDATE(fltcmp(matResult1[i].data, matResult2[i].data, 4 * 4), 0);
@@ -195,7 +196,7 @@ int main(int argc, char** argv)
 		ELAPSE_END(2, result[2]);
 
 		delete[] particle_aos_array;
-		VALIDATE(returnIndex, testIndex);
+		VALIDATE(returnIndex, testCaseIndex);
 	}
 	break;
 	case 4:
@@ -233,7 +234,7 @@ int main(int argc, char** argv)
 		}
 		ELAPSE_END(1, result[1]);
 
-		VALIDATE(returnIndex, testIndex);
+		VALIDATE(returnIndex, testCaseIndex);
 		release_monsters(monsterPool1, monsterCount);
 		release_monsters(monsterPool2, monsterCount);
 		delete[] monsterPool1;
@@ -358,8 +359,8 @@ int main(int argc, char** argv)
 			// Mesh, Material, Texture는 Monster의 소멸자에서 자동 해제됩니다.
 			delete baseMonster[i];
 		}
-		VALIDATE(returnIndex[0], testIndex);
-		VALIDATE(returnIndex[1], testIndex);
+		VALIDATE(returnIndex[0], testCaseIndex);
+		VALIDATE(returnIndex[1], testCaseIndex);
 	}
 	break;
 	case 9:
@@ -515,7 +516,6 @@ int main(int argc, char** argv)
 		name[1] = FUNC_NAME(parallel_pool_alloc_mutex);
 
 		const size_t threadCount = std::thread::hardware_concurrency();
-		std::vector<std::thread> threads;
 
 		size_t allocatedObjectCount[2]{ 0 };
 		const size_t objectCount = 750'000;  // 64 * 750'000 = 48MiB
@@ -537,6 +537,41 @@ int main(int argc, char** argv)
 		VALIDATE(allocatedObjectCount[0], allocatedObjectCount[1]);
 	}
 	break;
+	case 14:
+	{
+		name[0] = FUNC_NAME(parallel_count_lock_free);
+		name[1] = FUNC_NAME(parallel_count_spinlock);
+		name[2] = FUNC_NAME(parallel_count_mutex);
+
+		const size_t threadCount = std::thread::hardware_concurrency();
+		const size_t loopCount = 1'0'00;
+		int64_t count[3]{ 0, 0, 0 };
+		WARM_UP_CACHE_START();
+		do_something_in_parallel_with_spinlock(threadCount, loopCount, 0, count[0]);
+		do_something_in_parallel_with_mutex(threadCount, loopCount, 0, count[1]);
+		WARM_UP_CACHE_END();
+
+		count[0] = 0;
+		count[1] = 0;
+		count[2] = 0;
+
+		ELAPSE_START(0);
+		volatile int returnValue0 = do_something_in_parallel_with_lock_free(threadCount, loopCount, 0, count[0]);
+		ELAPSE_END(0, result[0]);
+
+		ELAPSE_START(1);
+		volatile int returnValue1 = do_something_in_parallel_with_spinlock(threadCount, loopCount, 0, count[1]);
+		ELAPSE_END(1, result[1]);
+
+		ELAPSE_START(2);
+		volatile int returnValue2 = do_something_in_parallel_with_mutex(threadCount, loopCount, 0, count[2]);
+		ELAPSE_END(2, result[2]);
+
+		VALIDATE(returnValue0, testCaseIndex);
+		VALIDATE(count[0], count[1]);
+		VALIDATE(count[0], count[2]);
+	}
+	break;
 
 	//...
 	default:
@@ -546,7 +581,7 @@ int main(int argc, char** argv)
 	int minIndex = 0;
 	time_t minTime = std::numeric_limits<long long>::max();
 	std::cout << "---------------------------------" << std::endl;
-	for (int i = 0; i < testCount; i++)
+	for (int i = 0; i < testSize; i++)
 	{
 		std::wcout << "## " << i << "번 함수 " << name[i] << " 수행 시간 : " << result[i] / 1000 << " 밀리초" << std::endl;
 		std::wcout << "---------------------------------" << std::endl;
